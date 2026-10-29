@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dialpad Reserve — Eastern Time Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --border-focus: #6366f1;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --hamzy-bg: #eef2ff;
+      --hamzy-text: #4338ca;
+      --hamzy-border: #c7d2fe;
+      --shimra-bg: #ecfdf5;
+      --shimra-text: #047857;
+      --shimra-border: #a7f3d0;
+      --danger: #ef4444;
+      --danger-bg: #fef2f2;
+      --success: #10b981;
+      --success-bg: #ecfdf5;
+      --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+      --radius-lg: 14px;
+      --radius-md: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg-page); color: var(--text-main); min-height: 100vh; line-height: 1.5; }
+
+    /* Navbar */
+    .navbar { background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 14px 32px; position: sticky; top: 0; z-index: 20; box-shadow: var(--shadow-sm); }
+    .navbar-inner { max-width: 1240px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #4f46e5, #6366f1); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; }
+    .brand-text h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+    .brand-text p { font-size: 0.78rem; color: var(--text-muted); }
+
+    .nav-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .et-clock-pill { display: flex; align-items: center; gap: 10px; background: var(--bg-subtle); border: 1px solid var(--border); padding: 6px 14px; border-radius: 999px; font-size: 0.82rem; }
+    .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
+    .user-profile { display: flex; align-items: center; gap: 10px; padding-left: 12px; border-left: 1px solid var(--border); }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--hamzy-bg); color: var(--primary); font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .container { max-width: 1240px; margin: 32px auto; padding: 0 24px; }
+
+    /* Inputs & Buttons */
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 6px; }
+    input, select { width: 100%; padding: 10px 13px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-main); font-size: 0.9rem; transition: all 0.15s ease; }
+    input:focus, select:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14); }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-radius: var(--radius-md); font-size: 0.88rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.15s ease; }
+    .btn-primary { background: var(--primary); color: #ffffff; box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: var(--bg-surface); border-color: var(--border); color: #334155; }
+    .btn-outline:hover { background: var(--bg-subtle); }
+    .btn-google { width: 100%; background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; padding: 12px 16px; font-size: 0.95rem; font-weight: 600; box-shadow: var(--shadow-sm); }
+    .btn-google:hover { background: #f8fafc; border-color: #94a3b8; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-danger-ghost { background: transparent; color: var(--danger); border-color: #fecaca; }
+    .btn-danger-ghost:hover { background: var(--danger-bg); }
+    .btn-sm { padding: 6px 12px; font-size: 0.78rem; border-radius: 8px; }
+
+    /* Auth Card */
+    .auth-wrapper { max-width: 440px; margin: 64px auto; background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 36px; box-shadow: var(--shadow-md); text-align: center; }
+    .auth-wrapper h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
+    .auth-wrapper p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 28px; }
+
+    /* Modal Backdrop */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+    .modal-box { background: var(--bg-surface); width: 100%; max-width: 380px; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15); padding: 28px; text-align: center; }
+    .modal-box h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
+    .modal-box p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 22px; }
+
+    /* SUCCESS LOGIN ANIMATION OVERLAY */
+    #success-animation-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.4s ease; }
+    .success-icon-wrapper { width: 90px; height: 90px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); border: 2px solid var(--success); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; animation: pulseScale 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    
+    /* Double Animated Ticks */
+    .double-check { display: flex; align-items: center; justify-content: center; position: relative; width: 44px; height: 32px; }
+    .tick-1 { stroke-dasharray: 40; stroke-dashoffset: 40; animation: drawTick 0.5s ease 0.2s forwards; }
+    .tick-2 { stroke-dasharray: 40; stroke-dashoffset: 40; animation: drawTick 0.5s ease 0.4s forwards; }
+
+    @keyframes drawTick { to { stroke-dashoffset: 0; } }
+    @keyframes pulseScale { 0% { transform: scale(0.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    .success-text { color: #fff; font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; animation: fadeInText 0.5s ease 0.5s forwards; opacity: 0; }
+    .success-sub { color: #94a3b8; font-size: 0.88rem; margin-top: 6px; animation: fadeInText 0.5s ease 0.6s forwards; opacity: 0; }
+    @keyframes fadeInText { to { opacity: 1; transform: translateY(0); } }
+
+    /* Workspace */
+    .workspace-grid { display: grid; grid-template-columns: 360px 1fr; gap: 28px; align-items: start; }
+    @media (max-width: 960px) { .workspace-grid { grid-template-columns: 1fr; } }
+
+    .card { background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .card-header h2 { font-size: 1.02rem; font-weight: 700; }
+    .card-body { padding: 24px; }
+
+    .calendar-toolbar { padding: 18px 24px; background: var(--bg-subtle); border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; justify-content: space-between; }
+    .toolbar-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; flex: 1; }
+    .control-item { min-width: 170px; }
+    .quick-actions { display: flex; gap: 8px; }
+
+    .schedule-banner { padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+    .schedule-banner h3 { font-size: 0.95rem; font-weight: 700; color: var(--text-main); }
+    .slot-counter { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); background: var(--bg-subtle); padding: 4px 10px; border-radius: 999px; }
+
+    .booking-list { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+    .date-section-header { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+    .booking-item { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 16px 20px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-surface); transition: box-shadow 0.12s ease; }
+    .booking-item:hover { box-shadow: var(--shadow-md); }
+    .booking-item.mine { border-left: 4px solid var(--primary); }
+
+    .booking-left { display: flex; flex-direction: column; gap: 6px; }
+    .badge-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .dialpad-badge { font-size: 0.76rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; }
+    .badge-hamzy { background: var(--hamzy-bg); color: var(--hamzy-text); border: 1px solid var(--hamzy-border); }
+    .badge-shimra { background: var(--shimra-bg); color: var(--shimra-text); border: 1px solid var(--shimra-border); }
+    .owner-pill { font-size: 0.7rem; font-weight: 700; color: var(--primary); background: #e0e7ff; padding: 2px 8px; border-radius: 6px; }
+
+    .booking-time { font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
+    .booking-member { font-size: 0.84rem; color: var(--text-muted); }
+    .booking-member strong { color: #334155; }
+
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+    .empty-icon { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-subtle); display: inline-flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 12px; }
+
+    .alert { padding: 12px 14px; border-radius: var(--radius-md); font-size: 0.84rem; font-weight: 500; margin-bottom: 16px; display: none; }
+    .alert-error { background: var(--danger-bg); color: #b91c1c; border: 1px solid #fecaca; }
+    .alert-success { background: var(--success-bg); color: #047857; border: 1px solid #a7f3d0; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- SUCCESS LOGIN ANIMATION OVERLAY -->
+  <div id="success-animation-overlay" class="hidden">
+    <div class="success-icon-wrapper">
+      <svg class="double-check" viewBox="0 0 52 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path class="tick-1" d="M2 18L14 30L34 6" stroke="#10B981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path class="tick-2" d="M18 30L30 18L50 2" stroke="#10B981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="success-text">Successfully Logged In!</div>
+    <div class="success-sub">Welcome to Dialpad Reserve Workspace</div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div id="logout-modal" class="modal-backdrop hidden">
+    <div class="modal-box">
+      <h3>Sign Out</h3>
+      <p>Are you sure you want to sign out of your Dialpad session?</p>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeLogoutModal()">Cancel</button>
+        <button type="button" class="btn btn-danger" style="flex:1;" onclick="confirmLogout()">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <div class="brand">
+        <div class="brand-icon">D</div>
+        <div class="brand-text">
+          <h1>Dialpad Reserve</h1>
+          <p>Team Availability & Clash Prevention</p>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <div class="et-clock-pill">
+          <span class="pulse-dot"></span>
+          <span style="color:var(--text-muted); font-weight:500;">Eastern Time (ET):</span>
+          <strong id="live-et-clock">--:--:--</strong>
+        </div>
+
+        <div id="user-nav" class="user-profile hidden">
+          <div class="avatar" id="user-avatar">U</div>
+          <div style="font-size:0.82rem;">
+            <div id="user-name-label" style="font-weight:700;"></div>
+            <div id="user-email-label" style="color:var(--text-muted); font-size:0.75rem;"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="promptLogout()">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Authentication View (Google Sign-In Only) -->
+    <section id="auth-view" class="auth-wrapper">
+      <h2>Sign in to Workspace</h2>
+      <p>Sign in with your Google account to reserve Hamzy or Shimra Dialpad slots.</p>
+
+      <div id="auth-alert" class="alert"></div>
+
+      <button type="button" class="btn btn-google" onclick="signInWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Continue with Google
+      </button>
+    </section>
+
+    <!-- Main Workspace View -->
+    <main id="workspace-view" class="workspace-grid hidden">
+      <!-- Left Sidebar: Booking Form -->
+      <div class="card">
+        <div class="card-header">
+          <h2 id="form-heading">Reserve a Dialpad Line</h2>
+          <span style="font-size:0.75rem; font-weight:600; color:var(--primary); background:var(--hamzy-bg); padding:3px 8px; border-radius:6px;">ET Zone</span>
+        </div>
+        <div class="card-body">
+          <div id="booking-alert" class="alert"></div>
+
+          <form id="booking-form" onsubmit="submitBooking(event)">
+            <input type="hidden" id="edit-id" value="" />
+
+            <div class="form-group" style="margin-bottom:16px;">
+              <label for="input-name">Team Member Name</label>
+              <input type="text" id="input-name" required />
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;">
+              <label for="input-dialpad">Select Dialpad</label>
+              <select id="input-dialpad" required>
+                <option value="Hamzy Dialpad">Hamzy Dialpad</option>
+                <option value="Shimra Dialpad">Shimra Dialpad</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;">
+              <label for="input-date">Date (Eastern Time)</label>
+              <input type="date" id="input-date" required />
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+              <div>
+                <label for="input-start">Start Time (ET)</label>
+                <input type="time" id="input-start" required />
+              </div>
+              <div>
+                <label for="input-end">End Time (ET)</label>
+                <input type="time" id="input-end" required />
+              </div>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn btn-primary" style="width:100%; margin-top:6px;">
+              Confirm Booking
+            </button>
+            <button type="button" id="cancel-edit-btn" class="btn btn-outline hidden" style="width:100%; margin-top:8px;" onclick="resetFormMode()">
+              Cancel Editing
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right Panel: Eastern Time Calendar & Date Search -->
+      <div class="card">
+        <div class="calendar-toolbar">
+          <div class="toolbar-controls">
+            <div class="control-item">
+              <label for="search-date">Search by Date (ET)</label>
+              <input type="date" id="search-date" onchange="handleDateSearchChange()" />
+            </div>
+
+            <div class="control-item">
+              <label for="filter-dialpad">Filter Dialpad Line</label>
+              <select id="filter-dialpad" onchange="fetchAndRenderBookings()">
+                <option value="ALL">All Dialpads (Hamzy & Shimra)</option>
+                <option value="Hamzy Dialpad">Hamzy Dialpad</option>
+                <option value="Shimra Dialpad">Shimra Dialpad</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <button type="button" id="btn-today" class="btn btn-primary btn-sm" onclick="jumpToToday()">Today (ET)</button>
+            <button type="button" id="btn-all-dates" class="btn btn-outline btn-sm" onclick="showAllDates()">View All Dates</button>
+          </div>
+        </div>
+
+        <div class="schedule-banner">
+          <h3 id="schedule-title">Today's Booked Calendar (Eastern Time)</h3>
+          <span class="slot-counter" id="slot-count-badge">0 Bookings</span>
+        </div>
+
+        <div id="calendar-results" class="booking-list"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let currentUser = null;
+    let todayEtString = "";
+    let currentBookings = [];
+    let viewAllMode = false;
+
+    // Optional Firebase Web Config for live Google Popup
+const FIREBASE_WEB_CONFIG = {
+      apiKey: "AIzaSyAOOL2sK3Ok37XEh8fRrvMXDCZ29Ur8nq8",
+      authDomain: "dialpad-b7646.firebaseapp.com",
+      projectId: "dialpad-b7646"
+    };
+
+    let firebaseAuthInstance = null;
+    if (FIREBASE_WEB_CONFIG.apiKey && window.firebase) {
+      firebase.initializeApp(FIREBASE_WEB_CONFIG);
+      firebaseAuthInstance = firebase.auth();
+    }
+
+    function getEasternTodayString() {
+      return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/New_York",
+        year: "numeric", month: "2-digit", day: "2-digit"
+      }).format(new Date());
+    }
+
+    function updateEasternClock() {
+      document.getElementById("live-et-clock").textContent = new Date().toLocaleTimeString("en-US", {
+        timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short"
+      });
+    }
+    setInterval(updateEasternClock, 1000);
+    updateEasternClock();
+
+    function showAlert(id, msg, type = "error") {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.className = `alert alert-${type}`;
+      el.style.display = "block";
+    }
+    function hideAlert(id) { document.getElementById(id).style.display = "none"; }
+
+    async function initApp() {
+      todayEtString = getEasternTodayString();
+      document.getElementById("input-date").value = todayEtString;
+      document.getElementById("search-date").value = todayEtString;
+
+      const res = await fetch("/api/auth/status");
+      const data = await res.json();
+      if (data.today_et) {
+        todayEtString = data.today_et;
+        document.getElementById("input-date").value = todayEtString;
+        document.getElementById("search-date").value = todayEtString;
+      }
+      if (data.authenticated) {
+        currentUser = data.user;
+        showWorkspace();
+      }
+    }
+
+    async function signInWithGoogle() {
+      hideAlert("auth-alert");
+
+      let payload = {};
+      if (firebaseAuthInstance) {
+        try {
+          const provider = new firebase.auth.GoogleAuthProvider();
+          const result = await firebaseAuthInstance.signInWithPopup(provider);
+          const idToken = await result.user.getIdToken();
+          payload = {
+            id_token: idToken,
+            name: result.user.displayName,
+            email: result.user.email,
+            picture: result.user.photoURL
+          };
+        } catch (err) {
+          return showAlert("auth-alert", err.message || "Google sign-in was cancelled.");
+        }
+      } else {
+        // Fallback prompt for quick local / Vercel testing when Firebase web keys aren't set
+        const email = prompt("Enter your Google Account Email:");
+        if (!email) return;
+        const name = prompt("Enter your Full Name:", email.split("@")[0]);
+        if (!name) return;
+        payload = { name, email, picture: "" };
+      }
+
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) return showAlert("auth-alert", data.error);
+
+      currentUser = data.user;
+      playSuccessAnimationAndShowWorkspace();
+    }
+
+    function playSuccessAnimationAndShowWorkspace() {
+      const overlay = document.getElementById("success-animation-overlay");
+      overlay.classList.remove("hidden");
+      
+      setTimeout(() => {
+        overlay.style.opacity = "0";
+        setTimeout(() => {
+          overlay.classList.add("hidden");
+          overlay.style.opacity = "1";
+          showWorkspace();
+        }, 400);
+      }, 1500);
+    }
+
+    function promptLogout() {
+      document.getElementById("logout-modal").classList.remove("hidden");
+    }
+    function closeLogoutModal() {
+      document.getElementById("logout-modal").classList.add("hidden");
+    }
+
+    async function confirmLogout() {
+      closeLogoutModal();
+      if (firebaseAuthInstance) {
+        try { await firebaseAuthInstance.signOut(); } catch (e) {}
+      }
+      await fetch("/api/auth/logout", { method: "POST" });
+      currentUser = null;
+      document.getElementById("workspace-view").classList.add("hidden");
+      document.getElementById("user-nav").classList.add("hidden");
+      document.getElementById("auth-view").classList.remove("hidden");
+    }
+
+    function showWorkspace() {
+      document.getElementById("auth-view").classList.add("hidden");
+      document.getElementById("workspace-view").classList.remove("hidden");
+      document.getElementById("user-nav").classList.remove("hidden");
+
+      document.getElementById("user-name-label").textContent = currentUser.name;
+      document.getElementById("user-email-label").textContent = currentUser.email;
+
+      const avatarEl = document.getElementById("user-avatar");
+      if (currentUser.picture) {
+        avatarEl.innerHTML = `<img src="${currentUser.picture}" alt="Avatar" />`;
+      } else {
+        avatarEl.textContent = currentUser.name.charAt(0).toUpperCase();
+      }
+
+      document.getElementById("input-name").value = currentUser.name;
+      jumpToToday();
+    }
+
+    function handleDateSearchChange() {
+      viewAllMode = false;
+      updateFilterButtonStates();
+      fetchAndRenderBookings();
+    }
+
+    function jumpToToday() {
+      viewAllMode = false;
+      todayEtString = getEasternTodayString();
+      document.getElementById("search-date").value = todayEtString;
+      updateFilterButtonStates();
+      fetchAndRenderBookings();
+    }
+
+    function showAllDates() {
+      viewAllMode = true;
+      document.getElementById("search-date").value = "";
+      updateFilterButtonStates();
+      fetchAndRenderBookings();
+    }
+
+    function updateFilterButtonStates() {
+      const selectedDate = document.getElementById("search-date").value;
+      const isToday = !viewAllMode && selectedDate === todayEtString;
+      document.getElementById("btn-today").className = isToday ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm";
+      document.getElementById("btn-all-dates").className = viewAllMode ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm";
+    }
+
+    async function fetchAndRenderBookings() {
+      const searchDate = viewAllMode ? "" : document.getElementById("search-date").value;
+      const dialpadFilter = document.getElementById("filter-dialpad").value;
+
+      const params = new URLSearchParams();
+      if (searchDate) params.set("date", searchDate);
+      if (dialpadFilter) params.set("dialpad", dialpadFilter);
+
+      const res = await fetch(`/api/bookings?${params.toString()}`);
+      currentBookings = await res.json();
+      renderCalendarList(searchDate);
+    }
+
+    function renderCalendarList(searchDate) {
+      const container = document.getElementById("calendar-results");
+      const titleEl = document.getElementById("schedule-title");
+      const countEl = document.getElementById("slot-count-badge");
+
+      countEl.textContent = `${currentBookings.length} ${currentBookings.length === 1 ? "Booking" : "Bookings"}`;
+
+      if (viewAllMode) {
+        titleEl.textContent = "All Upcoming & Past Bookings (Eastern Time)";
+      } else if (searchDate === todayEtString) {
+        titleEl.textContent = `Today's Booked Calendar — ${searchDate} (ET)`;
+      } else {
+        titleEl.textContent = `Booked Calendar for ${searchDate} (ET)`;
+      }
+
+      if (currentBookings.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            <h4 style="color:var(--text-main); margin-bottom:4px;">No Dialpad Bookings Found</h4>
+            <p style="font-size:0.85rem;">Both Hamzy and Shimra Dialpads are completely open.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const grouped = {};
+      currentBookings.forEach(b => {
+        if (!grouped[b.et_display_date]) grouped[b.et_display_date] = [];
+        grouped[b.et_display_date].push(b);
+      });
+
+      let html = "";
+      for (const [displayDate, items] of Object.entries(grouped)) {
+        html += `<div class="date-section-header">${displayDate}</div>`;
+        items.forEach(b => {
+          const isMine = currentUser && b.owner_email === currentUser.email;
+          const badgeClass = b.dialpad === "Hamzy Dialpad" ? "badge-hamzy" : "badge-shimra";
+
+          html += `
+            <div class="booking-item ${isMine ? "mine" : ""}">
+              <div class="booking-left">
+                <div class="badge-row">
+                  <span class="dialpad-badge ${badgeClass}">● ${b.dialpad}</span>
+                  ${isMine ? `<span class="owner-pill">Your Booking</span>` : ""}
+                </div>
+                <div class="booking-time">${b.et_time_range}</div>
+                <div class="booking-member">Booked by <strong>${b.name}</strong> (${b.owner_email})</div>
+              </div>
+              ${isMine ? `
+                <div style="display:flex; gap:8px;">
+                  <button class="btn btn-outline btn-sm" onclick="populateEditForm('${b.id}')">Edit</button>
+                  <button class="btn btn-danger-ghost btn-sm" onclick="removeBooking('${b.id}')">Delete</button>
+                </div>
+              ` : ""}
+            </div>
+          `;
+        });
+      }
+      container.innerHTML = html;
+    }
+
+    async function submitBooking(e) {
+      e.preventDefault();
+      hideAlert("booking-alert");
+
+      const editId = document.getElementById("edit-id").value;
+      const payload = {
+        name: document.getElementById("input-name").value,
+        dialpad: document.getElementById("input-dialpad").value,
+        date: document.getElementById("input-date").value,
+        start_time: document.getElementById("input-start").value,
+        end_time: document.getElementById("input-end").value
+      };
+
+      const res = await fetch(editId ? `/api/bookings/${editId}` : "/api/bookings", {
+        method: editId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!res.ok) return showAlert("booking-alert", data.error, "error");
+
+      showAlert("booking-alert", editId ? "Booking updated!" : "Slot reserved successfully!", "success");
+      viewAllMode = false;
+      document.getElementById("search-date").value = payload.date;
+      updateFilterButtonStates();
+      resetFormMode();
+      fetchAndRenderBookings();
+    }
+
+    function populateEditForm(bookingId) {
+      const b = currentBookings.find(item => item.id === bookingId);
+      if (!b) return;
+      hideAlert("booking-alert");
+      document.getElementById("edit-id").value = b.id;
+      document.getElementById("input-name").value = b.name;
+      document.getElementById("input-dialpad").value = b.dialpad;
+      document.getElementById("input-date").value = b.et_date;
+      document.getElementById("input-start").value = b.et_start_24;
+      document.getElementById("input-end").value = b.et_end_24;
+      document.getElementById("form-heading").textContent = "Edit Your Reservation";
+      document.getElementById("submit-btn").textContent = "Save Changes";
+      document.getElementById("cancel-edit-btn").classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function resetFormMode() {
+      document.getElementById("edit-id").value = "";
+      document.getElementById("input-name").value = currentUser ? currentUser.name : "";
+      document.getElementById("form-heading").textContent = "Reserve a Dialpad Line";
+      document.getElementById("submit-btn").textContent = "Confirm Booking";
+      document.getElementById("cancel-edit-btn").classList.add("hidden");
+    }
+
+    async function removeBooking(bookingId) {
+      if (!confirm("Delete your Dialpad reservation?")) return;
+      const res = await fetch(`/api/bookings/${bookingId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error);
+      fetchAndRenderBookings();
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
